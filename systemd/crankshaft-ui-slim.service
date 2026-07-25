@@ -1,0 +1,19 @@
+[Unit]
+Description=Crankshaft UI (Qt EGLFS dashboard frontend)
+After=crankshaft-core.service network.target
+Requires=crankshaft-core.service
+
+[Service]
+Type=simple
+# TODO: adjust to your actual build output path
+ExecStart=/home/beegor/crankProject/crankshaft-ui-slim/build-release/ui-slim/crankshaft-ui-slim
+WorkingDirectory=/home/beegor/crankProject/crankshaft-ui-slim
+Restart=on-failure
+RestartSec=2
+User=beegor
+# EGLFS/Qt on the console typically needs these
+Environment=QT_QPA_PLATFORM=eglfs
+Environment=QT_QPA_EGLFS_ALWAYS_SET_MODE=1
+
+[Install]
+WantedBy=multi-user.target

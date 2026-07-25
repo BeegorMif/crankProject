@@ -1,0 +1,16 @@
+[Unit]
+Description=Crankshaft core (Android Auto session/protocol daemon)
+After=network.target bluetooth.target
+Wants=network.target
+
+[Service]
+Type=simple
+# TODO: adjust to your actual build output path
+ExecStart=/home/beegor/crankProject/crankshaft-core/build-release/core/crankshaft-core
+WorkingDirectory=/home/beegor/crankProject/crankshaft-core
+Restart=on-failure
+RestartSec=2
+User=beegor
+
+[Install]
+WantedBy=multi-user.target
