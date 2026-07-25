@@ -1,0 +1,6 @@
+# Each of these is its own git repo (BeegorMif forks) with its own history/remotes.
+# They're pulled/built in place by crank-pull-build.sh and should not be tracked
+# as part of crankProject itself.
+crankshaft_aasdk/
+crankshaft-core/
+crankshaft-ui-slim/
