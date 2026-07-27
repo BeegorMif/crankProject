@@ -29,7 +29,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-UNITS=(crankshaft-core.service crankshaft-ui-slim.service)
+UNITS=(crankshaft-core.service crankshaft-ui-slim.service dash-server.service)
 
 for unit in "${UNITS[@]}"; do
     echo "==> Installing $unit"
