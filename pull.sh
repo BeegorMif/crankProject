@@ -19,25 +19,39 @@ case "${1:-}" in
     *) echo "Unknown option: $1"; usage ;;
 esac
 
-# Root folder holding all three projects
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-# name -> git URL, in required build order (aasdk before core before ui-slim)
+# name|url|branch  (blank branch = repo default)
 REPOS=(
-    "crankshaft_aasdk|https://github.com/BeegorMif/crankshaft_aasdk"
-    "crankshaft-core|https://github.com/BeegorMif/crankshaft-core"
-    "crankshaft-ui-slim|https://github.com/BeegorMif/crankshaft-ui-slim"
+    "crankshaft_aasdk|https://github.com/BeegorMif/crankshaft_aasdk|"
+    "crankshaft-core|https://github.com/BeegorMif/crankshaft-core|"
+    "crankshaft-ui-slim|https://github.com/BeegorMif/crankshaft-ui-slim|"
+)
+
+DASH_REPOS=(
+    "node_server|https://github.com/BeegorMif/node_server|crankshaft_ui_server"
+    "dash_ui|https://github.com/BeegorMif/dash_ui|crankshaft_vue_ui"
 )
 
 pull_repo() {
-    local name="$1" url="$2"
+    local name="$1" url="$2" branch="$3"
     if [ -d "$name/.git" ]; then
         echo "==> Updating $name"
-        git -C "$name" pull --ff-only
+        if [ -n "$branch" ]; then
+            git -C "$name" fetch origin "$branch"
+            git -C "$name" checkout "$branch"
+            git -C "$name" pull --ff-only origin "$branch"
+        else
+            git -C "$name" pull --ff-only
+        fi
     else
         echo "==> Cloning $name"
-        git clone "$url" "$name"
+        if [ -n "$branch" ]; then
+            git clone -b "$branch" "$url" "$name"
+        else
+            git clone "$url" "$name"
+        fi
     fi
 }
 
@@ -50,11 +64,28 @@ build_repo() {
     (cd "$name" && ./build.sh)
 }
 
+build_node_server() {
+    local name="$1"
+    echo "==> npm install for $name"
+    (cd "$name" && npm install)
+}
+
+build_dash_ui() {
+    local name="$1"
+    echo "==> npm install for $name"
+    (cd "$name" && npm install)
+    echo "==> npm run build for $name"
+    (cd "$name" && npm run build)
+}
+
 if [ "$DO_PULL" -eq 1 ]; then
     for entry in "${REPOS[@]}"; do
-        name="${entry%%|*}"
-        url="${entry##*|}"
-        pull_repo "$name" "$url"
+        IFS='|' read -r name url branch <<< "$entry"
+        pull_repo "$name" "$url" "$branch"
+    done
+    for entry in "${DASH_REPOS[@]}"; do
+        IFS='|' read -r name url branch <<< "$entry"
+        pull_repo "$name" "$url" "$branch"
     done
 else
     echo "==> Skipping pull (using local working copies as-is)"
@@ -65,6 +96,8 @@ if [ "$DO_BUILD" -eq 1 ]; then
         name="${entry%%|*}"
         build_repo "$name"
     done
+    build_node_server "node_server"
+    build_dash_ui "dash_ui"
 else
     echo "==> Skipping build (--pull-only)"
 fi
