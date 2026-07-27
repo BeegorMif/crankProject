@@ -14,6 +14,7 @@ User=beegor
 # EGLFS/Qt on the console typically needs these
 Environment=QT_QPA_PLATFORM=eglfs
 Environment=QT_QPA_EGLFS_ALWAYS_SET_MODE=1
+Environment=QT_QPA_EGLFS_HIDECURSOR=1
 
 [Install]
 WantedBy=multi-user.target
