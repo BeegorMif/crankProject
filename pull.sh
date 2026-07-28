@@ -98,6 +98,9 @@ if [ "$DO_BUILD" -eq 1 ]; then
     done
     build_node_server "node_server"
     build_dash_ui "dash_ui"
+    sudo systemctl restart crankshaft-core.service
+    sudo systemctl restart crankshaft-ui-slim.service
+    sudo systemctl restart dash-server.service
 else
     echo "==> Skipping build (--pull-only)"
 fi
