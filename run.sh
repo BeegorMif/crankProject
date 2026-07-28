@@ -15,16 +15,31 @@ usage() {
     echo "                 pass this flag."
     exit 1
 }
-
 RUN_CORE=1
 RUN_SERVER=1
 RUN_UI=1
 DESKTOP_MODE=0
+
+COMPONENT_SELECTED=0
 for arg in "$@"; do
     case "$arg" in
-        --core-only) RUN_SERVER=0; RUN_UI=0 ;;
-        --server-only) RUN_CORE=0; RUN_UI=0 ;;
-        --ui-only) RUN_CORE=0; RUN_SERVER=0 ;;
+        --core|--server|--ui)
+            COMPONENT_SELECTED=1
+            ;;
+    esac
+done
+
+if [ "$COMPONENT_SELECTED" -eq 1 ]; then
+    RUN_CORE=0
+    RUN_SERVER=0
+    RUN_UI=0
+fi
+
+for arg in "$@"; do
+    case "$arg" in
+        --core)   RUN_CORE=1 ;;
+        --server) RUN_SERVER=1 ;;
+        --ui)     RUN_UI=1 ;;
         --desktop) DESKTOP_MODE=1 ;;
         -h|--help) usage ;;
         *) echo "Unknown option: $arg"; usage ;;
