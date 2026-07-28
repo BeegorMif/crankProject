@@ -4,3 +4,5 @@
 crankshaft_aasdk/
 crankshaft-core/
 crankshaft-ui-slim/
+dash_ui/
+node_server/
