@@ -1,7 +1,6 @@
 [Unit]
 Description=Crankshaft UI (Qt EGLFS dashboard frontend)
-After=crankshaft-core.service network.target
-Requires=crankshaft-core.service
+After=network.target
 
 [Service]
 Type=simple
