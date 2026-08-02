@@ -61,7 +61,7 @@ build_repo() {
     echo "==> Installing deps for $name"
     (cd "$name" && ./build.sh --install-deps)
     echo "==> Building $name"
-    (cd "$name" && ./build.sh)
+    (cd "$name" && BUILD_TESTS=OFF ./build.sh)
 }
 
 build_node_server() {
