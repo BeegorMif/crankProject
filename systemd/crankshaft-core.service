@@ -11,6 +11,8 @@ WorkingDirectory=/home/beegor/crankProject/crankshaft-core
 Restart=on-failure
 RestartSec=2
 User=beegor
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
 
 [Install]
 WantedBy=multi-user.target
