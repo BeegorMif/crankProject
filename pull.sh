@@ -92,8 +92,7 @@ else
 fi
 
 if [ "$DO_BUILD" -eq 1 ]; then
-    sudo systemctl stop crankshaft-core.service
-    sudo systemctl stop crankshaft-ui-slim.service
+    sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service || true
     for entry in "${REPOS[@]}"; do
         name="${entry%%|*}"
         build_repo "$name"
