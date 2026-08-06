@@ -100,6 +100,20 @@ build_dash_ui() {
     (cd "$name" && npm run build)
 }
 
+install_dash_server_unit() {
+    local unit_src="${ROOT_DIR}/systemd/dash-server.service"
+    local unit_dst="/etc/systemd/system/dash-server.service"
+    if [ ! -f "$unit_src" ]; then
+        echo "==> WARNING: $unit_src not found, skipping unit install"
+        return
+    fi
+    if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
+        echo "==> Installing dash-server.service"
+        sudo install -m 0644 "$unit_src" "$unit_dst"
+        sudo systemctl enable dash-server.service
+    fi
+}
+
 if [ "$DO_PULL" -eq 1 ]; then
     for entry in "${REPOS[@]}"; do
         IFS='|' read -r name url branch <<< "$entry"
@@ -121,6 +135,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
     done
     build_node_server "node_server"
     build_dash_ui "dash_ui"
+    install_dash_server_unit
     sudo systemctl daemon-reload
     sudo systemctl restart crankshaft-core.service
     sudo systemctl restart crankshaft-ui-slim.service
