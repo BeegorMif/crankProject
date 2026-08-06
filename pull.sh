@@ -74,7 +74,7 @@ build_repo() {
 
 install_deb_packages() {
     local name="$1"
-    local pkg_dir="$name/build-release/packages"
+    local pkg_dir="${ROOT_DIR}/${name}/build-release/packages"
     shopt -s nullglob
     local debs=("$pkg_dir"/*.deb)
     shopt -u nullglob
