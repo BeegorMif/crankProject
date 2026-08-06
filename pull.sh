@@ -114,6 +114,20 @@ install_dash_server_unit() {
     fi
 }
 
+install_pulseaudio_server_unit() {
+    local unit_src="${ROOT_DIR}/systemd/crankshaft-pulseaudio.service"
+    local unit_dst="/etc/systemd/system/crankshaft-pulseaudio.service"
+    if [ ! -f "$unit_src" ]; then
+        echo "==> WARNING: $unit_src not found, skipping unit install"
+        return
+    fi
+    if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
+        echo "==> Installing crankshaft-pulseaudio.service"
+        sudo install -m 0644 "$unit_src" "$unit_dst"
+        sudo systemctl enable crankshaft-pulseaudio.service
+    fi
+}
+
 if [ "$DO_PULL" -eq 1 ]; then
     for entry in "${REPOS[@]}"; do
         IFS='|' read -r name url branch <<< "$entry"
@@ -136,6 +150,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
     build_node_server "node_server"
     build_dash_ui "dash_ui"
     install_dash_server_unit
+    install_pulseaudio_server_unit
     sudo systemctl daemon-reload
     sudo systemctl restart crankshaft-core.service
     sudo systemctl restart crankshaft-ui-slim.service

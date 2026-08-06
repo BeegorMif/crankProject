@@ -1,7 +1,7 @@
 [Unit]
 Description=Crankshaft core (Android Auto session/protocol daemon)
-After=network.target bluetooth.target
-Wants=network.target
+Requires=crankshaft-pulseaudio.service
+After=network.target bluetooth.target crankshaft-pulseaudio.service
 
 [Service]
 Type=simple
@@ -11,8 +11,9 @@ WorkingDirectory=/home/beegor/crankProject/crankshaft-core
 Restart=on-failure
 RestartSec=2
 User=beegor
-Environment=XDG_RUNTIME_DIR=/run/user/1000
-Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+Environment=XDG_RUNTIME_DIR=/run/crankshaft
+Environment=PULSE_SERVER=unix:/run/crankshaft/pulse/native
+Environment=PIPEWIRE_RUNTIME_DIR=/run/crankshaft
 
 [Install]
 WantedBy=multi-user.target

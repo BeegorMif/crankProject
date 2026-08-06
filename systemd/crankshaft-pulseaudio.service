@@ -1,0 +1,24 @@
+[Unit]
+Description=PulseAudio for Crankshaft
+After=sound.target
+Wants=sound.target
+
+[Service]
+Type=simple
+User=crankshaft
+Group=crankshaft
+
+RuntimeDirectory=crankshaft
+RuntimeDirectoryMode=0755
+
+Environment=HOME=/var/lib/crankshaft
+Environment=XDG_RUNTIME_DIR=/run/crankshaft
+Environment=PULSE_RUNTIME_PATH=/run/crankshaft/pulse
+
+ExecStart=/usr/bin/pulseaudio --daemonize=no --system=false
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
