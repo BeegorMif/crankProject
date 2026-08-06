@@ -60,8 +60,30 @@ build_repo() {
     chmod +x "$name/build.sh"
     echo "==> Installing deps for $name"
     (cd "$name" && ./build.sh --install-deps)
-    echo "==> Building $name"
-    (cd "$name" && BUILD_TESTS=OFF ./build.sh)
+        if [ "$name" = "crankshaft_aasdk" ]; then
+        # aasdk is a library dependency, not packaged as a .deb — install it
+        # directly so libaasdk headers/.so are on the system for the others to link against.
+        echo "==> Building + installing $name (library)"
+        (cd "$name" && BUILD_TESTS=OFF INSTALL_AFTER_BUILD=ON ./build.sh)
+    else
+        echo "==> Building + packaging $name"
+        (cd "$name" && BUILD_TESTS=OFF BUILD_PACKAGE=ON ./build.sh)
+        install_deb_packages "$name"
+    fi
+}
+
+install_deb_packages() {
+    local name="$1"
+    local pkg_dir="$name/build-release/packages"
+    shopt -s nullglob
+    local debs=("$pkg_dir"/*.deb)
+    shopt -u nullglob
+    if [ "${#debs[@]}" -eq 0 ]; then
+        echo "==> WARNING: no .deb found in $pkg_dir, skipping install"
+        return
+    fi
+    echo "==> Installing ${debs[*]}"
+    sudo apt-get install -y --reinstall "${debs[@]}"
 }
 
 build_node_server() {
@@ -99,6 +121,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
     done
     build_node_server "node_server"
     build_dash_ui "dash_ui"
+    sudo systemctl daemon-reload
     sudo systemctl restart crankshaft-core.service
     sudo systemctl restart crankshaft-ui-slim.service
     sudo systemctl restart dash-server.service
