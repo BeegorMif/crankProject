@@ -1,6 +1,5 @@
 [Unit]
 Description=Dash server (serves dash_ui)
-After=network.target
 
 [Service]
 Type=simple
