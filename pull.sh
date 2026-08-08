@@ -2,22 +2,27 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: $0 [--skip-pull | --pull-only]"
+    echo "Usage: $0 [--skip-pull | --pull-only] [--skip-deps]"
     echo "  (no flags)   pull all repos, then build all repos"
     echo "  --skip-pull  build only, using whatever is on disk (local changes safe)"
+    echo "  --skip-deps  build only, skip installing dependencies (useful if deps already installed)"
     echo "  --pull-only  fetch/update repos, don't build"
     exit 1
 }
 
 DO_PULL=1
 DO_BUILD=1
-case "${1:-}" in
-    --skip-pull) DO_PULL=0 ;;
-    --pull-only) DO_BUILD=0 ;;
-    "") ;;
-    -h|--help) usage ;;
-    *) echo "Unknown option: $1"; usage ;;
-esac
+DO_DEPS=1
+
+for arg in "$@"; do
+    case "$arg" in
+        --skip-pull) DO_PULL=0 ;;
+        --pull-only) DO_BUILD=0 ;;
+        --skip-deps) DO_DEPS=0 ;;
+        -h|--help) usage ;;
+        *) echo "Unknown option: $arg"; usage ;;
+    esac
+done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
@@ -58,8 +63,12 @@ pull_repo() {
 build_repo() {
     local name="$1"
     chmod +x "$name/build.sh"
-    echo "==> Installing deps for $name"
-    (cd "$name" && ./build.sh --install-deps)
+    if [ "$DO_DEPS" -eq 1 ]; then
+        echo "==> Installing deps for $name"
+        (cd "$name" && ./build.sh --install-deps)
+    else
+        echo "==> Skipping dep install for $name"
+    fi
         if [ "$name" = "crankshaft_aasdk" ]; then
         # aasdk is a library dependency, not packaged as a .deb — install it
         # directly so libaasdk headers/.so are on the system for the others to link against.
@@ -88,14 +97,22 @@ install_deb_packages() {
 
 build_node_server() {
     local name="$1"
-    echo "==> npm install for $name"
-    (cd "$name" && npm install)
+    if [ "$DO_DEPS" -eq 1 ]; then
+        echo "==> npm install for $name"
+        (cd "$name" && npm install)
+    else
+        echo "==> Skipping npm install for $name"
+    fi
 }
 
 build_dash_ui() {
     local name="$1"
-    echo "==> npm install for $name"
-    (cd "$name" && npm install)
+    if [ "$DO_DEPS" -eq 1 ]; then
+        echo "==> npm install for $name"
+        (cd "$name" && npm install)
+    else
+        echo "==> Skipping npm install for $name"
+    fi
     echo "==> npm run build for $name"
     (cd "$name" && npm run build)
 }
