@@ -10,6 +10,15 @@ usage() {
     exit 1
 }
 
+show_status() {
+    printf '\033c' > /dev/tty1 2>/dev/null || true
+    {
+        echo "=== Crankshaft Update ==="
+        echo ""
+        echo "$1"
+    } > /dev/tty1 2>/dev/null || true
+}
+
 DO_PULL=1
 DO_BUILD=1
 DO_DEPS=1
@@ -41,6 +50,7 @@ DASH_REPOS=(
 
 pull_repo() {
     local name="$1" url="$2" branch="$3"
+    show_status "Pulling $name..."
     if [ -d "$name/.git" ]; then
         echo "==> Updating $name"
         if [ -n "$branch" ]; then
@@ -62,8 +72,10 @@ pull_repo() {
 
 build_repo() {
     local name="$1"
+    show_status "Building $name..."
     chmod +x "$name/build.sh"
     if [ "$DO_DEPS" -eq 1 ]; then
+        show_status "Installing deps for $name..."
         echo "==> Installing deps for $name"
         (cd "$name" && ./build.sh --install-deps)
     else
@@ -72,9 +84,11 @@ build_repo() {
         if [ "$name" = "crankshaft_aasdk" ]; then
         # aasdk is a library dependency, not packaged as a .deb — install it
         # directly so libaasdk headers/.so are on the system for the others to link against.
+        show_status "Building + installing $name..."
         echo "==> Building + installing $name (library)"
         (cd "$name" && BUILD_TESTS=OFF INSTALL_AFTER_BUILD=ON ./build.sh)
     else
+        show_status "Building + packaging $name..."
         echo "==> Building + packaging $name"
         (cd "$name" && BUILD_TESTS=OFF BUILD_PACKAGE=ON ./build.sh)
         install_deb_packages "$name"
@@ -91,12 +105,14 @@ install_deb_packages() {
         echo "==> WARNING: no .deb found in $pkg_dir, skipping install"
         return
     fi
+    show_status "Installing package for $name..."
     echo "==> Installing ${debs[*]}"
     sudo apt-get install -y --reinstall "${debs[@]}"
 }
 
 build_node_server() {
     local name="$1"
+    show_status "Setting up $name..."
     if [ "$DO_DEPS" -eq 1 ]; then
         echo "==> npm install for $name"
         (cd "$name" && npm install)
@@ -107,6 +123,7 @@ build_node_server() {
 
 build_dash_ui() {
     local name="$1"
+    show_status "Building $name..."
     if [ "$DO_DEPS" -eq 1 ]; then
         echo "==> npm install for $name"
         (cd "$name" && npm install)
@@ -125,6 +142,7 @@ install_dash_server_unit() {
         return
     fi
     if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
+        show_status "Installing dash-server service..."
         echo "==> Installing dash-server.service"
         sudo install -m 0644 "$unit_src" "$unit_dst"
         sudo systemctl enable dash-server.service
@@ -139,6 +157,7 @@ install_pulseaudio_server_unit() {
         return
     fi
     if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
+        show_status "Installing pulseaudio service..."
         echo "==> Installing crankshaft-pulseaudio.service"
         sudo install -m 0644 "$unit_src" "$unit_dst"
         sudo systemctl enable crankshaft-pulseaudio.service
@@ -146,6 +165,7 @@ install_pulseaudio_server_unit() {
 }
 
 if [ "$DO_PULL" -eq 1 ]; then
+    show_status "Pulling repositories..."
     for entry in "${REPOS[@]}"; do
         IFS='|' read -r name url branch <<< "$entry"
         pull_repo "$name" "$url" "$branch"
@@ -159,6 +179,7 @@ else
 fi
 
 if [ "$DO_BUILD" -eq 1 ]; then
+    show_status "Stopping services for update..."
     sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service || true
     for entry in "${REPOS[@]}"; do
         name="${entry%%|*}"
@@ -168,9 +189,11 @@ if [ "$DO_BUILD" -eq 1 ]; then
     build_dash_ui "dash_ui"
     install_dash_server_unit
     install_pulseaudio_server_unit
+    show_status "Restarting services..."
     sudo systemctl daemon-reload
     sudo systemctl restart crankshaft-core.service
     sudo systemctl restart crankshaft-ui-slim.service
+    show_status "Update complete, restarting dash server..."
     sudo systemctl restart dash-server.service
 else
     echo "==> Skipping build (--pull-only)"
