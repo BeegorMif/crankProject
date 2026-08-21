@@ -5,7 +5,7 @@ usage() {
     echo "Usage: $0 [--skip-pull | --pull-only] [--skip-deps]"
     echo "  (no flags)   pull all repos, then build all repos"
     echo "  --skip-pull  build only, using whatever is on disk (local changes safe)"
-    echo "  --skip-deps  build only, skip installing dependencies (useful if deps already installed)"
+    echo "  --deps  build only, skip installing dependencies (useful if deps already installed)"
     echo "  --pull-only  fetch/update repos, don't build"
     exit 1
 }
@@ -27,7 +27,7 @@ for arg in "$@"; do
     case "$arg" in
         --skip-pull) DO_PULL=0 ;;
         --pull-only) DO_BUILD=0 ;;
-        --skip-deps) DO_DEPS=0 ;;
+        --deps) DO_DEPS=1 ;;
         -h|--help) usage ;;
         *) echo "Unknown option: $arg"; usage ;;
     esac
