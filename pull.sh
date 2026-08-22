@@ -21,7 +21,7 @@ show_status() {
 
 DO_PULL=1
 DO_BUILD=1
-DO_DEPS=1
+DO_DEPS=0
 
 for arg in "$@"; do
     case "$arg" in
