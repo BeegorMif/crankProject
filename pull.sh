@@ -215,5 +215,6 @@ if [ "$DO_BUILD" -eq 1 ]; then
 else
     echo "==> Skipping build (--pull-only)"
 fi
-
+source "$(dirname "${BASH_SOURCE[0]}")/install_plymouth_theme.sh"
+install_plymouth_theme
 echo "==> Done"

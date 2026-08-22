@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Crankshaft
+Description=Crankshaft head unit boot splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/crankshaft
+ScriptFile=/usr/share/plymouth/themes/crankshaft/crankshaft.script
