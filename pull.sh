@@ -108,6 +108,8 @@ install_deb_packages() {
     show_status "Installing package for $name..."
     echo "==> Installing ${debs[*]}"
     sudo apt-get install -y --reinstall "${debs[@]}"
+    echo "==> Removing installed .deb packages"
+    rm -f "${debs[@]}"
 }
 
 build_node_server() {
