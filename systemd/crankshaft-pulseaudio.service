@@ -16,6 +16,7 @@ Environment=XDG_RUNTIME_DIR=/run/crankshaft
 Environment=PULSE_RUNTIME_PATH=/run/crankshaft/pulse
 
 ExecStart=/usr/bin/pulseaudio --daemonize=no --system=false
+ExecStartPost=/usr/local/bin/crankshaft-set-default-audio-sink.sh
 
 Restart=always
 RestartSec=5

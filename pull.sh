@@ -166,6 +166,20 @@ install_pulseaudio_server_unit() {
     fi
 }
 
+install_pulseaudio_sink_script() {
+    local script_src="${ROOT_DIR}/systemd/crankshaft-set-default-audio-sink.sh"
+    local script_dst="/usr/local/bin/crankshaft-set-default-audio-sink.sh"
+    if [ ! -f "$script_src" ]; then
+        echo "==> WARNING: $script_src not found, skipping sink script install"
+        return
+    fi
+    if ! cmp -s "$script_src" "$script_dst" 2>/dev/null; then
+        show_status "Installing audio sink helper script..."
+        echo "==> Installing crankshaft-set-default-audio-sink.sh"
+        sudo install -m 0755 "$script_src" "$script_dst"
+    fi
+}
+
 if [ "$DO_PULL" -eq 1 ]; then
     show_status "Pulling repositories..."
     for entry in "${REPOS[@]}"; do
@@ -191,6 +205,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
     build_dash_ui "dash_ui"
     install_dash_server_unit
     install_pulseaudio_server_unit
+    install_pulseaudio_sink_script
     show_status "Restarting services..."
     sudo systemctl daemon-reload
     sudo systemctl restart crankshaft-core.service
