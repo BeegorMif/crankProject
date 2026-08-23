@@ -5,7 +5,7 @@ usage() {
     echo "Usage: $0 [--skip-pull | --pull-only] [--skip-deps]"
     echo "  (no flags)   pull all repos, then build all repos"
     echo "  --skip-pull  build only, using whatever is on disk (local changes safe)"
-    echo "  --deps  build only, skip installing dependencies (useful if deps already installed)"
+    echo "  --deps  also install deps"
     echo "  --pull-only  fetch/update repos, don't build"
     exit 1
 }
@@ -197,6 +197,9 @@ fi
 if [ "$DO_BUILD" -eq 1 ]; then
     show_status "Stopping services for update..."
     sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service || true
+    if [ "$DO_DEPS" -eq 1 ]; then
+        install_nodejs
+    fi
     for entry in "${REPOS[@]}"; do
         name="${entry%%|*}"
         build_repo "$name"
@@ -215,6 +218,23 @@ if [ "$DO_BUILD" -eq 1 ]; then
 else
     echo "==> Skipping build (--pull-only)"
 fi
+
+install_nodejs() {
+    show_status "Installing Node.js 24..."
+    echo "==> Installing Node.js 24 + npm"
+
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl
+
+    curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+
+    echo "==> Node.js version:"
+    node --version
+    echo "==> npm version:"
+    npm --version
+}
+
 source "$(dirname "${BASH_SOURCE[0]}")/install_plymouth_theme.sh"
 install_plymouth_theme
 echo "==> Done"
