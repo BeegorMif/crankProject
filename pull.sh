@@ -90,7 +90,7 @@ build_repo() {
     else
         show_status "Building + packaging $name..."
         echo "==> Building + packaging $name"
-        (cd "$name" && BUILD_TESTS=OFF BUILD_PACKAGE=ON ./build.sh)
+        (cd "$name" && BUILD_TESTS=OFF BUILD_PACKAGE=ON BUILD_INSTALL=OFF ./build.sh)
         install_deb_packages "$name"
     fi
 }
@@ -208,7 +208,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
     build_dash_ui "dash_ui"
     install_dash_server_unit
     install_pulseaudio_server_unit
-    install_pulseaudio_sink_script
+    # install_pulseaudio_sink_script
     show_status "Restarting services..."
     sudo systemctl daemon-reload
     sudo systemctl restart crankshaft-core.service
