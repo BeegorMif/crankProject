@@ -4,7 +4,7 @@ Description=Dash server (serves dash_ui)
 [Service]
 Type=simple
 WorkingDirectory=/home/beegor/crankProject/node_server
-ExecStart=/usr/bin/node server.cjs
+ExecStart=/usr/local/bin/node /home/beegor/crankProject/node_server/server.cjs
 Restart=on-failure
 RestartSec=2
 Environment=NODE_ENV=production
