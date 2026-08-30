@@ -1,0 +1,68 @@
+#!/bin/bash
+# /usr/local/bin/crankshaft-jellyfin-window
+#!/bin/bash
+export DISPLAY=:0
+
+case "$1" in
+    start-hidden)
+        echo "Starting Jellyfin Chrome hidden"
+        /usr/local/bin/crankshaft-jellyfin >/tmp/crankshaft-jellyfin.log 2>&1 &
+        sleep 2
+        for i in $(seq 1 30); do
+            WINDOW_IDS=$(xdotool search --class '^Google-chrome$' 2>/dev/null)
+            for id in $WINDOW_IDS; do
+                CLASS=$(xwininfo -id "$id" 2>/dev/null | awk '
+                    /^  Class:/ {
+                        if ($2 == "Class:") print $3;
+                        else print $2;
+                    }
+                ')
+                if [ "$CLASS" = "InputOutput" ]; then
+                    echo "Chrome window found: $id"
+                    xdotool windowmove "$id" 0 0
+                    xdotool windowsize "$id" 1280 720
+                    xdotool windowunmap "$id"
+                    echo "Chrome started and hidden"
+                    exit 0
+                fi
+            done
+            sleep 1
+        done
+        echo "Chrome window did not appear"
+        cat /tmp/crankshaft-jellyfin.log
+        exit 1
+        ;;
+
+    focus|minimize)
+        WINDOW_IDS=$(xdotool search --class '^Google-chrome$' 2>/dev/null)
+        for id in $WINDOW_IDS; do
+            CLASS=$(xwininfo -id "$id" 2>/dev/null | awk '
+                /^  Class:/ {
+                    if ($2 == "Class:") print $3;
+                    else print $2;
+                }
+            ')
+            echo "Window $id: $CLASS"
+            [ "$CLASS" = "InputOutput" ] || continue
+            case "$1" in
+                focus)
+                    echo "Focusing $id"
+                    xdotool windowmap "$id"
+                    xdotool windowmove "$id" 0 0
+                    xdotool windowsize "$id" 1280 720
+                    xdotool windowraise "$id"
+                    xdotool windowactivate "$id"
+                    ;;
+                minimize)
+                    echo "Hiding $id"
+                    xdotool windowunmap "$id"
+                    ;;
+            esac
+        done
+        ;;
+
+    *)
+        echo "Usage: $0 {focus|minimize|start-hidden}"
+        exit 1
+        ;;
+esac
