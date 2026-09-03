@@ -19,7 +19,7 @@ case "$1" in
                 ')
                 if [ "$CLASS" = "InputOutput" ]; then
                     echo "Chrome window found: $id"
-                    xdotool windowmove "$id" 0 0
+                    xdotool windowmove "$id" -2000 -2000
                     xdotool windowsize "$id" 1280 720
                     xdotool windowunmap "$id"
                     echo "Chrome started and hidden"
