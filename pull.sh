@@ -196,20 +196,20 @@ fi
 
 fix_crankshaft_user() {
     # ============================================================
-# Configure crankshaft service user
-# ============================================================
+    # Configure crankshaft X11 setup
+    # ============================================================
 
-echo "Configuring crankshaft user..."
+    show_status "Configuring crankshaft user..."
+    show_status "Stopping services for user setup..."
+    sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service  dashboard-xorg.service || true
 
     CRANKSHAFT_HOME="/home/crankshaft"
 
     # Make sure the crankshaft user exists
     if ! id crankshaft >/dev/null 2>&1; then
-        echo "Creating crankshaft user..."
-        sudo useradd \
-            --system \
-            --create-home \
+        sudo useradd --system \
             --home-dir "$CRANKSHAFT_HOME" \
+            --create-home \
             --shell /bin/bash \
             crankshaft
     else
@@ -217,22 +217,28 @@ echo "Configuring crankshaft user..."
     fi
 
     # Make sure the home directory exists
-    if [ ! -d "$CRANKSHAFT_HOME" ]; then
-        echo "Creating $CRANKSHAFT_HOME..."
-        sudo mkdir -p "$CRANKSHAFT_HOME"
-    fi
+    sudo mkdir -p "$CRANKSHAFT_HOME"
 
-    # Make sure ownership is correct
-    sudo chown -R crankshaft:crankshaft "$CRANKSHAFT_HOME"
-
-    # Fix the user's configured home/shell in case the account already existed
+    # Set the correct home directory and shell
     sudo usermod \
         --home "$CRANKSHAFT_HOME" \
         --shell /bin/bash \
         crankshaft
 
-    echo "crankshaft user configured:"
+    # Ensure ownership
+    sudo chown -R crankshaft:crankshaft "$CRANKSHAFT_HOME"
+
+    # Xorg needs somewhere to write its log
+    sudo -u crankshaft mkdir -p "$CRANKSHAFT_HOME/.local/share/xorg"
+
+    # Prepare Xauthority
+    sudo touch "$CRANKSHAFT_HOME/.Xauthority"
+    sudo chown crankshaft:crankshaft "$CRANKSHAFT_HOME/.Xauthority"
+
+    echo "crankshaft account:"
     getent passwd crankshaft
+
+    echo "crankshaft home:"
     ls -ld "$CRANKSHAFT_HOME"
 }
 
@@ -251,10 +257,10 @@ if [ "$DO_BUILD" -eq 1 ]; then
     fix_crankshaft_user
     show_status "Restarting services..."
     sudo systemctl daemon-reload
+    sudo systemctl restart dashboard-xorg.service
+    sudo systemctl restart dash-server.service
     sudo systemctl restart crankshaft-core.service
     sudo systemctl restart crankshaft-ui-slim.service
-    show_status "Update complete, restarting dash server..."
-    sudo systemctl restart dash-server.service
 else
     echo "==> Skipping build (--pull-only)"
 fi
