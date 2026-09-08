@@ -287,7 +287,7 @@ fix_crankshaft_user() {
 
 if [ "$DO_BUILD" -eq 1 ]; then
     show_status "Stopping services for update..."
-    sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service || true
+    sudo systemctl stop crankshaft-xorg crankshaft-core.service crankshaft-ui-slim.service || true
     for entry in "${REPOS[@]}"; do
         name="${entry%%|*}"
         build_repo "$name"
