@@ -194,6 +194,48 @@ else
     echo "==> Skipping pull (using local working copies as-is)"
 fi
 
+fix_crankshaft_user() {
+    # ============================================================
+# Configure crankshaft service user
+# ============================================================
+
+echo "Configuring crankshaft user..."
+
+    CRANKSHAFT_HOME="/home/crankshaft"
+
+    # Make sure the crankshaft user exists
+    if ! id crankshaft >/dev/null 2>&1; then
+        echo "Creating crankshaft user..."
+        sudo useradd \
+            --system \
+            --create-home \
+            --home-dir "$CRANKSHAFT_HOME" \
+            --shell /bin/bash \
+            crankshaft
+    else
+        echo "crankshaft user already exists"
+    fi
+
+    # Make sure the home directory exists
+    if [ ! -d "$CRANKSHAFT_HOME" ]; then
+        echo "Creating $CRANKSHAFT_HOME..."
+        sudo mkdir -p "$CRANKSHAFT_HOME"
+    fi
+
+    # Make sure ownership is correct
+    sudo chown -R crankshaft:crankshaft "$CRANKSHAFT_HOME"
+
+    # Fix the user's configured home/shell in case the account already existed
+    sudo usermod \
+        --home "$CRANKSHAFT_HOME" \
+        --shell /bin/bash \
+        crankshaft
+
+    echo "crankshaft user configured:"
+    getent passwd crankshaft
+    ls -ld "$CRANKSHAFT_HOME"
+}
+
 if [ "$DO_BUILD" -eq 1 ]; then
     show_status "Stopping services for update..."
     sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service || true
@@ -206,6 +248,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
     install_dash_server_unit
     install_pulseaudio_server_unit
     install_pulseaudio_sink_script
+    fix_crankshaft_user
     show_status "Restarting services..."
     sudo systemctl daemon-reload
     sudo systemctl restart crankshaft-core.service
