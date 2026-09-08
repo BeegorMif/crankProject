@@ -1,0 +1,8 @@
+#!/bin/bash
+
+export HOME=/home/crankshaft
+export DISPLAY=:0
+export XAUTHORITY=/home/crankshaft/.Xauthority
+
+# Keep X session alive
+exec tail -f /dev/null

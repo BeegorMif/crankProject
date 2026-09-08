@@ -1,0 +1,28 @@
+[Unit]
+Description=X11 Display Server
+After=systemd-user-sessions.service
+Conflicts=getty@tty1.service
+
+[Service]
+User=crankshaft
+Group=crankshaft
+SupplementaryGroups=tty video input
+
+Environment=HOME=/home/crankshaft
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/crankshaft/.Xauthority
+
+WorkingDirectory=/home/crankshaft
+
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+
+ExecStart=/usr/bin/startx /usr/local/bin/crankshaft-xinit -- :0 vt1 -keeptty
+
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical.target

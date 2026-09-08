@@ -166,6 +166,48 @@ install_pulseaudio_server_unit() {
     fi
 }
 
+install_xorg_server_unit() {
+    local unit_src="${ROOT_DIR}/systemd/dashboard-xorg.service"
+    local unit_dst="/etc/systemd/system/dashboard-xorg.service"
+    if [ ! -f "$unit_src" ]; then
+        echo "==> WARNING: $unit_src not found, skipping unit install"
+        return
+    fi
+    if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
+        show_status "Installing xorg service..."
+        echo "==> Installing xorg.service"
+        sudo install -m 0644 "$unit_src" "$unit_dst"
+        sudo systemctl enable dashboard-xorg.service
+    fi
+}
+install_xinit_script() {
+    local script_src="${ROOT_DIR}/systemd/crankshaft-xinit"
+    local script_dst="/usr/local/bin/crankshaft-xinit"
+    if [ ! -f "$script_src" ]; then
+        echo "==> WARNING: $script_src not found, skipping xinit script install"
+        return
+    fi
+    if ! cmp -s "$script_src" "$script_dst" 2>/dev/null; then
+        show_status "Installing X11 startup script..."
+        echo "==> Installing crankshaft-xinit"
+        sudo install -m 0755 "$script_src" "$script_dst"
+    fi
+}
+install_touchscreen_udev_rule() {
+    local rule_src="${ROOT_DIR}/systemd/99-waveshare-touchscreen.rules"
+    local rule_dst="/etc/udev/rules.d/99-waveshare-touchscreen.rules"
+    if [ ! -f "$rule_src" ]; then
+        echo "==> WARNING: $rule_src not found, skipping touchscreen rule install"
+        return
+    fi
+    if ! cmp -s "$rule_src" "$rule_dst" 2>/dev/null; then
+        show_status "Installing Waveshare touchscreen rule..."
+        echo "==> Installing 99-waveshare-touchscreen.rules"
+        sudo install -m 0644 "$rule_src" "$rule_dst"
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
+    fi
+}
 install_pulseaudio_sink_script() {
     local script_src="${ROOT_DIR}/systemd/crankshaft-set-default-audio-sink.sh"
     local script_dst="/usr/local/bin/crankshaft-set-default-audio-sink.sh"
@@ -201,7 +243,7 @@ fix_crankshaft_user() {
 
     show_status "Configuring crankshaft user..."
     show_status "Stopping services for user setup..."
-    sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service  dashboard-xorg.service || true
+    sudo systemctl stop crankshaft-core.service crankshaft-ui-slim.service dashboard-xorg.service || true
 
     CRANKSHAFT_HOME="/home/crankshaft"
 
@@ -240,6 +282,7 @@ fix_crankshaft_user() {
 
     echo "crankshaft home:"
     ls -ld "$CRANKSHAFT_HOME"
+
 }
 
 if [ "$DO_BUILD" -eq 1 ]; then
@@ -254,6 +297,9 @@ if [ "$DO_BUILD" -eq 1 ]; then
     install_dash_server_unit
     install_pulseaudio_server_unit
     install_pulseaudio_sink_script
+    install_xorg_server_unit
+    install_xinit_script
+    install_touchscreen_udev_rule
     fix_crankshaft_user
     show_status "Restarting services..."
     sudo systemctl daemon-reload
