@@ -90,7 +90,8 @@ build_repo() {
     else
         show_status "Building + packaging $name..."
         echo "==> Building + packaging $name"
-        (cd "$name" && BUILD_TESTS=OFF BUILD_PACKAGE=OFF ./build.sh)
+        (cd "$name" && BUILD_TESTS=OFF BUILD_PACKAGE=ON ./build.sh)
+        install_deb_packages "$name"
     fi
 }
 
