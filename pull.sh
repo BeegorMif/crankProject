@@ -82,11 +82,20 @@ build_repo() {
         echo "==> Skipping dep install for $name"
     fi
     if [ "$name" = "crankshaft_aasdk" ]; then
-        # aasdk is a library dependency, not packaged as a .deb — install it
-        # directly so libaasdk headers/.so are on the system for the others to link against.
         show_status "Building + installing $name..."
         echo "==> Building + installing $name (library)"
-        (cd "$name" && INSTALL_AFTER_BUILD=ON ./build.sh)
+
+        # Build and install our local AASDK into /usr/local.
+        (cd "$name" && \
+            CMAKE_INSTALL_PREFIX=/usr/local \
+            INSTALL_AFTER_BUILD=ON \
+            ./build.sh)
+
+        # Make the local AASDK take precedence over any distro package.
+        sudo ldconfig
+
+        echo "==> Installed AASDK:"
+        ldconfig -p | grep libaasdk || true
     else
         show_status "Building + packaging $name..."
         echo "==> Building + packaging $name"
