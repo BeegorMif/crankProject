@@ -81,16 +81,16 @@ build_repo() {
     else
         echo "==> Skipping dep install for $name"
     fi
-        if [ "$name" = "crankshaft_aasdk" ]; then
+    if [ "$name" = "crankshaft_aasdk" ]; then
         # aasdk is a library dependency, not packaged as a .deb — install it
         # directly so libaasdk headers/.so are on the system for the others to link against.
         show_status "Building + installing $name..."
         echo "==> Building + installing $name (library)"
-        (cd "$name" && BUILD_TESTS=OFF INSTALL_AFTER_BUILD=ON ./build.sh)
+        (cd "$name" && INSTALL_AFTER_BUILD=ON ./build.sh)
     else
         show_status "Building + packaging $name..."
         echo "==> Building + packaging $name"
-        (cd "$name" && BUILD_TESTS=OFF BUILD_PACKAGE=ON ./build.sh)
+        (cd "$name" && BUILD_PACKAGE=ON ./build.sh)
         install_deb_packages "$name"
     fi
 }
