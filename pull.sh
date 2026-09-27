@@ -2,10 +2,10 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: $0 [--skip-pull | --pull-only] [--skip-deps]"
-    echo "  (no flags)   pull all repos, then build all repos"
+    echo "Usage: $0 [--skip-pull | --pull-only] [--deps]"
+    echo "  (no flags)   pull all repos, then build all repos (dependency installs skipped)"
     echo "  --skip-pull  build only, using whatever is on disk (local changes safe)"
-    echo "  --deps  build only, skip installing dependencies (useful if deps already installed)"
+    echo "  --deps       also install/update build dependencies before building"
     echo "  --pull-only  fetch/update repos, don't build"
     exit 1
 }
@@ -145,90 +145,21 @@ build_dash_ui() {
     (cd "$name" && npm run build)
 }
 
-install_dash_server_unit() {
-    local unit_src="${ROOT_DIR}/systemd/dash-server.service"
-    local unit_dst="/etc/systemd/system/dash-server.service"
-    if [ ! -f "$unit_src" ]; then
-        echo "==> WARNING: $unit_src not found, skipping unit install"
-        return
+# Installs $src -> $dst (with mode $3) only if it's missing or changed.
+# Returns 0 (and prints/installs) if it installed something, 1 otherwise —
+# use that to gate any one-off post-install step (enable a unit, reload udev...).
+install_managed_file() {
+    local src="$1" dst="$2" mode="$3" label="$4"
+    if [ ! -f "$src" ]; then
+        echo "==> WARNING: $src not found, skipping $label install"
+        return 1
     fi
-    if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
-        show_status "Installing dash-server service..."
-        echo "==> Installing dash-server.service"
-        sudo install -m 0644 "$unit_src" "$unit_dst"
-        sudo systemctl enable dash-server.service
+    if cmp -s "$src" "$dst" 2>/dev/null; then
+        return 1
     fi
-}
-
-install_pulseaudio_server_unit() {
-    local unit_src="${ROOT_DIR}/systemd/crankshaft-pulseaudio.service"
-    local unit_dst="/etc/systemd/system/crankshaft-pulseaudio.service"
-    if [ ! -f "$unit_src" ]; then
-        echo "==> WARNING: $unit_src not found, skipping unit install"
-        return
-    fi
-    if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
-        show_status "Installing pulseaudio service..."
-        echo "==> Installing crankshaft-pulseaudio.service"
-        sudo install -m 0644 "$unit_src" "$unit_dst"
-        sudo systemctl enable crankshaft-pulseaudio.service
-    fi
-}
-
-install_xorg_server_unit() {
-    local unit_src="${ROOT_DIR}/systemd/dashboard-xorg.service"
-    local unit_dst="/etc/systemd/system/dashboard-xorg.service"
-    if [ ! -f "$unit_src" ]; then
-        echo "==> WARNING: $unit_src not found, skipping unit install"
-        return
-    fi
-    if ! cmp -s "$unit_src" "$unit_dst" 2>/dev/null; then
-        show_status "Installing xorg service..."
-        echo "==> Installing xorg.service"
-        sudo install -m 0644 "$unit_src" "$unit_dst"
-        sudo systemctl enable dashboard-xorg.service
-    fi
-}
-install_xinit_script() {
-    local script_src="${ROOT_DIR}/systemd/crankshaft-xinit"
-    local script_dst="/usr/local/bin/crankshaft-xinit"
-    if [ ! -f "$script_src" ]; then
-        echo "==> WARNING: $script_src not found, skipping xinit script install"
-        return
-    fi
-    if ! cmp -s "$script_src" "$script_dst" 2>/dev/null; then
-        show_status "Installing X11 startup script..."
-        echo "==> Installing crankshaft-xinit"
-        sudo install -m 0755 "$script_src" "$script_dst"
-    fi
-}
-install_touchscreen_udev_rule() {
-    local rule_src="${ROOT_DIR}/systemd/99-waveshare-touchscreen.rules"
-    local rule_dst="/etc/udev/rules.d/99-waveshare-touchscreen.rules"
-    if [ ! -f "$rule_src" ]; then
-        echo "==> WARNING: $rule_src not found, skipping touchscreen rule install"
-        return
-    fi
-    if ! cmp -s "$rule_src" "$rule_dst" 2>/dev/null; then
-        show_status "Installing Waveshare touchscreen rule..."
-        echo "==> Installing 99-waveshare-touchscreen.rules"
-        sudo install -m 0644 "$rule_src" "$rule_dst"
-        sudo udevadm control --reload-rules
-        sudo udevadm trigger
-    fi
-}
-install_pulseaudio_sink_script() {
-    local script_src="${ROOT_DIR}/systemd/crankshaft-set-default-audio-sink.sh"
-    local script_dst="/usr/local/bin/crankshaft-set-default-audio-sink.sh"
-    if [ ! -f "$script_src" ]; then
-        echo "==> WARNING: $script_src not found, skipping sink script install"
-        return
-    fi
-    if ! cmp -s "$script_src" "$script_dst" 2>/dev/null; then
-        show_status "Installing audio sink helper script..."
-        echo "==> Installing crankshaft-set-default-audio-sink.sh"
-        sudo install -m 0755 "$script_src" "$script_dst"
-    fi
+    show_status "Installing $label..."
+    echo "==> Installing $label"
+    sudo install -m "$mode" "$src" "$dst"
 }
 
 if [ "$DO_PULL" -eq 1 ]; then
@@ -335,12 +266,32 @@ if [ "$DO_BUILD" -eq 1 ]; then
     done
     build_node_server "node_server"
     build_dash_ui "dash_ui"
-    install_dash_server_unit
-    install_pulseaudio_server_unit
-    install_pulseaudio_sink_script
-    install_xorg_server_unit
-    install_xinit_script
-    install_touchscreen_udev_rule
+    if install_managed_file "$ROOT_DIR/systemd/dash-server.service" \
+        "/etc/systemd/system/dash-server.service" 0644 "dash-server.service"; then
+        sudo systemctl enable dash-server.service
+    fi
+
+    if install_managed_file "$ROOT_DIR/systemd/crankshaft-pulseaudio.service" \
+        "/etc/systemd/system/crankshaft-pulseaudio.service" 0644 "crankshaft-pulseaudio.service"; then
+        sudo systemctl enable crankshaft-pulseaudio.service
+    fi
+
+    install_managed_file "$ROOT_DIR/systemd/crankshaft-set-default-audio-sink.sh" \
+        "/usr/local/bin/crankshaft-set-default-audio-sink.sh" 0755 "audio sink helper script"
+
+    if install_managed_file "$ROOT_DIR/systemd/dashboard-xorg.service" \
+        "/etc/systemd/system/dashboard-xorg.service" 0644 "dashboard-xorg.service"; then
+        sudo systemctl enable dashboard-xorg.service
+    fi
+
+    install_managed_file "$ROOT_DIR/systemd/crankshaft-xinit" \
+        "/usr/local/bin/crankshaft-xinit" 0755 "crankshaft-xinit"
+
+    if install_managed_file "$ROOT_DIR/systemd/99-waveshare-touchscreen.rules" \
+        "/etc/udev/rules.d/99-waveshare-touchscreen.rules" 0644 "99-waveshare-touchscreen.rules"; then
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
+    fi
     fix_crankshaft_user
     show_status "Restarting services..."
     sudo systemctl daemon-reload
