@@ -294,12 +294,44 @@ fix_crankshaft_user() {
 
 }
 
+install_crankshaft_core_binary() {
+    local binary_src="${ROOT_DIR}/crankshaft-core/build-release/core/crankshaft-core"
+    local binary_dst="/usr/local/bin/crankshaft-core"
+
+    if [ ! -f "$binary_src" ]; then
+        echo "==> ERROR: Built crankshaft-core not found: $binary_src"
+        exit 1
+    fi
+
+    show_status "Installing crankshaft-core binary..."
+    echo "==> Installing $binary_src -> $binary_dst"
+
+    sudo install -m 0755 "$binary_src" "$binary_dst"
+
+    # Verify that the installed binary is using the local AASDK.
+    if readelf -d "$binary_dst" |
+        grep -qE 'libaasdk\.so\.4|libaap_protobuf\.so\.4'; then
+        echo "==> ERROR: Installed crankshaft-core is linked against old AASDK"
+        readelf -d "$binary_dst" |
+            grep -E 'NEEDED.*(aasdk|aap_protobuf|protobuf)'
+        exit 1
+    fi
+
+    echo "==> Installed crankshaft-core dependencies:"
+    readelf -d "$binary_dst" |
+        grep -E 'NEEDED.*(aasdk|aap_protobuf|protobuf)'
+}
+
 if [ "$DO_BUILD" -eq 1 ]; then
     show_status "Stopping services for update..."
     sudo systemctl stop crankshaft-xorg crankshaft-core.service crankshaft-ui-slim.service || true
     for entry in "${REPOS[@]}"; do
         name="${entry%%|*}"
         build_repo "$name"
+
+        if [ "$name" = "crankshaft-core" ]; then
+            install_crankshaft_core_binary
+        fi
     done
     build_node_server "node_server"
     build_dash_ui "dash_ui"
